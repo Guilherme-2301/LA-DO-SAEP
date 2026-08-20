@@ -10,14 +10,13 @@ body {
   min-height: 100vh;
 }
 
-/* Layout Principal */
 .layout-saep {
   display: flex;
   min-height: 100vh;
   width: 100%;
 }
 
-/* Sidebar */
+/* Sidebar Esquerda */
 .sidebar {
   width: 250px;
   background-color: #2b2b2b;
@@ -34,15 +33,15 @@ body {
 }
 
 .sidebar-logo {
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background-color: #444;
+  background-color: #555;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 10px auto;
-  font-size: 1.8rem;
+  font-size: 2rem;
 }
 
 .sidebar-title {
@@ -78,8 +77,8 @@ body {
   gap: 10px;
   color: #fff;
   text-decoration: none;
-  padding: 10px 14px;
-  background-color: #383838;
+  padding: 12px;
+  background-color: #4c3b94;
   border-radius: 4px;
 }
 
@@ -91,7 +90,7 @@ body {
   padding-top: 15px;
 }
 
-/* Main Content */
+/* Conteúdo Principal */
 .main-content {
   flex: 1;
   padding: 20px 40px;
@@ -102,10 +101,9 @@ body {
 .content-header {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
-/* Filtros */
 .filter-bar {
   background-color: #2b2b2b;
   display: flex;
@@ -121,14 +119,49 @@ body {
   padding: 12px;
   font-weight: bold;
   cursor: pointer;
+}
+
+/* Form Card */
+.form-card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  background: #fff;
+  margin-bottom: 25px;
+}
+
+.form-title {
   text-align: center;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
 }
 
-.filter-item.active {
-  background-color: #383838;
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 15px;
 }
 
-/* Cards Feed */
+.form-grid label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Feed de Atividades */
+.feed-title {
+  text-align: center;
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+}
+
 .atividades-feed {
   display: flex;
   flex-direction: column;
@@ -137,7 +170,7 @@ body {
 
 .atividade-card {
   display: flex;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 6px;
   padding: 15px;
   background: #fff;
@@ -156,13 +189,11 @@ body {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: #2b2b2b;
-  color: #fff;
+  background-color: #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   margin-bottom: 6px;
 }
 
@@ -212,7 +243,7 @@ body {
 
 .card-actions {
   display: flex;
-  gap: 12px;
+  gap: 15px;
 }
 
 .action-item {
@@ -220,7 +251,78 @@ body {
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 1rem;
+}
+
+/* Coração Vermelho quando Curtido */
+.curtido-red {
+  color: #ff0000 !important;
+  font-weight: bold;
+}
+
+/* Modais e Botões */
+.btn {
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-dark {
+  background-color: #222;
+  color: #fff;
+}
+
+.btn-secondary {
+  background-color: #eee;
+  color: #333;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 24px;
+  width: 320px;
+}
+
+.comentarios-lista {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.comentario-item {
+  font-size: 0.85rem;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.error-msg {
+  color: #d32f2f;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
 }
 
 /* Paginação */
@@ -244,68 +346,4 @@ body {
 .page-number.active {
   background: #2b2b2b;
   color: #fff;
-  border-color: #2b2b2b;
-}
-
-/* Modal de Login (Ajustado) */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-}
-
-.modal {
-  background: #ffffff;
-  border-radius: 8px;
-  padding: 30px;
-  width: 320px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.modal h2 {
-  font-size: 1.2rem;
-  margin-bottom: 20px;
-  color: #2b2b2b;
-  text-align: center;
-}
-
-.input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.btn {
-  border: none;
-  border-radius: 4px;
-  padding: 10px 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background-color: #2b2b2b;
-  color: #fff;
-}
-
-.btn-secondary {
-  background-color: #e0e0e0;
-  color: #333;
-}
-
-.error-msg {
-  color: #d32f2f;
-  font-size: 0.8rem;
-  margin-bottom: 10px;
-  text-align: center;
 }
