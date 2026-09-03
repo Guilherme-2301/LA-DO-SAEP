@@ -6,14 +6,25 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. Conexão PostgreSQL
-const sequelize = new Sequelize('saep_saude', 'postgres', 'senai', {
-  host: 'localhost',
-  dialect: 'postgres',
-  logging: false,
-});
+// 1. Conexão Flexível (Local vs Nuvem/Render)
+const sequelize = process.env.DATABASE_URL
+  ? new Sequelize(process.env.DATABASE_URL, {
+      dialect: 'postgres',
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      },
+      logging: false,
+    })
+  : new Sequelize('saep_saude', 'postgres', 'senai', {
+      host: 'localhost',
+      dialect: 'postgres',
+      logging: false,
+    });
 
-// 2. Definição dos Modelos Atualizados
+// 2. Definição dos Modelos
 const Usuario = sequelize.define('Usuario', {
   nome: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
@@ -53,13 +64,12 @@ Usuario.hasMany(Comentario, { foreignKey: 'usuario_id' });
 Atividade.hasMany(Comentario, { foreignKey: 'atividade_id' });
 Comentario.belongsTo(Usuario, { foreignKey: 'usuario_id' });
 
-// 4. Sincronização e Povoamento do Banco
+// 4. Sincronização e Povoamento Inicial
 async function inicializar() {
   try {
     await sequelize.authenticate();
     await sequelize.sync({ force: true });
 
-    // Inserção exata dos usuários fornecidos
     await Usuario.bulkCreate([
       { id: 1, nome: 'saepsaude', email: 'saepsaude@email.com', nome_usuario: 'saepsaude', imagem: 'saepsaude.png', senha: '123', createdAt: '2024-08-14 18:56:33.531 +00:00', updatedAt: '2024-08-14 18:56:33.531 +00:00' },
       { id: 2, nome: 'usuario1', email: 'usuario1@email.com', nome_usuario: 'usuario01', imagem: 'usuario01.jpg', senha: '123', createdAt: '2024-08-14 18:58:07.862 +00:00', updatedAt: '2024-08-14 18:58:07.862 +00:00' },
@@ -67,7 +77,6 @@ async function inicializar() {
       { id: 4, nome: 'usuario3', email: 'usuario3@email.com', nome_usuario: 'usuario03', imagem: 'usuario03.jpg', senha: '123', createdAt: '2024-08-14 18:58:35.090 +00:00', updatedAt: '2024-08-14 18:58:35.090 +00:00' }
     ]);
 
-    // Inserção exata das atividades fornecidas anteriormente
     await Atividade.bulkCreate([
       { id: 3, tipo_atividade: 'caminhada', distancia_percorrida: 5000, duracao_atividade: 70, quantidade_calorias: 340, usuario_id: 1, createdAt: '2024-08-14 19:15:11.453 +00:00', updatedAt: '2024-08-14 19:15:11.453 +00:00' },
       { id: 4, tipo_atividade: 'caminhada', distancia_percorrida: 4000, duracao_atividade: 40, quantidade_calorias: 140, usuario_id: 2, createdAt: '2024-08-14 19:15:54.438 +00:00', updatedAt: '2024-08-14 19:15:54.438 +00:00' },
@@ -83,9 +92,9 @@ async function inicializar() {
       { id: 14, tipo_atividade: 'trilha', distancia_percorrida: 5000, duracao_atividade: 70, quantidade_calorias: 570, usuario_id: 4, createdAt: '2024-08-14 19:26:23.865 +00:00', updatedAt: '2024-08-14 19:26:23.865 +00:00' }
     ]);
 
-    console.log('✅ USUÁRIOS E ATIVIDADES POPULADOS COM SUCESSO');
+    console.log('✅ BANCO INICIALIZADO COM SUCESSO');
   } catch (err) {
-    console.error('❌ ERRO NO BANCO DE DADOS:', err.message);
+    console.error('❌ ERRO NO BANCO:', err.message);
   }
 }
 
@@ -221,6 +230,8 @@ app.post('/atividades/:id/comentarios', async (req, res) => {
   }
 });
 
-app.listen(3000, () => {
-  console.log('🚀 Backend atualizado e rodando na porta 3000!');
+// 8. Porta dinâmica para o Deploy
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
