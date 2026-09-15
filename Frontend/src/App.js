@@ -89,6 +89,11 @@ function App() {
     e.preventDefault();
     if (!usuario) return;
 
+    if (!tipo) {
+      alert('Selecione um tipo de atividade válido.');
+      return;
+    }
+
     const distNum = parseInt(distancia, 10);
     const durNum = parseInt(duracao, 10);
     const calNum = parseInt(calorias, 10);
@@ -99,7 +104,6 @@ function App() {
     }
 
     try {
-      // Envia chaves em camelCase e snake_case para compatibilidade com a tabela no Render
       await axios.post(`${API_URL}/atividades`, {
         tipo: tipo.trim(),
         distancia_m: distNum,
@@ -285,13 +289,17 @@ function App() {
               <div className="form-grid">
                 <div>
                   <label>Tipo da atividade</label>
-                  <input
-                    className="input"
-                    placeholder="Ex: Caminhada"
-                    value={tipo}
-                    onChange={e => setTipo(e.target.value)}
+                  <select 
+                    className="input" 
+                    value={tipo} 
+                    onChange={e => setTipo(e.target.value)} 
                     required
-                  />
+                  >
+                    <option value="">Selecione o tipo</option>
+                    <option value="Corrida">Corrida</option>
+                    <option value="Caminhada">Caminhada</option>
+                    <option value="Trilha">Trilha</option>
+                  </select>
                 </div>
                 <div>
                   <label>Distância percorrida (metros)</label>
