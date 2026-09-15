@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
 
-// URL direta do seu Backend implantado no Render
 const API_URL = 'https://saep-backend.onrender.com';
 
 function App() {
   const [atividades, setAtividades] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [usuario, setUsuario] = useState(null); // Inicia sem usuário logado
   const [paginaAtual, setPaginaAtual] = useState(1);
-  const [usuario, setUsuario] = useState({ id: 1, email: 'usuario01@email.com' });
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
-  // Estados do Formulário
+  // Estados do Formulário de Atividade
   const [tipo, setTipo] = useState('');
   const [distancia, setDistancia] = useState('');
   const [duracao, setDuracao] = useState('');
@@ -24,9 +24,31 @@ function App() {
 
   const ITENS_POR_PAGINA = 2;
 
+  // Carrega lista de usuários e atividades ao iniciar
+  useEffect(() => {
+    carregarUsuarios();
+  }, []);
+
   useEffect(() => {
     carregarAtividades();
   }, [usuario]);
+
+  const carregarUsuarios = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/usuarios`);
+      setUsuarios(res.data);
+      // Se houver usuários e nenhum estiver selecionado, seleciona o primeiro por padrão
+      if (res.data.length > 0 && !usuario) {
+        setUsuario(res.data[0]);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar usuários:', err);
+      // Fallback de segurança caso a rota de usuários falhe
+      if (!usuario) {
+        setUsuario({ id: 1, email: 'usuario01@email.com' });
+      }
+    }
+  };
 
   const carregarAtividades = async () => {
     try {
@@ -38,10 +60,30 @@ function App() {
     }
   };
 
+  const handleToggleLogin = () => {
+    if (usuario) {
+      setUsuario(null); // Logout
+    } else if (usuarios.length > 0) {
+      setUsuario(usuarios[0]); // Login como primeiro usuário
+    } else {
+      setUsuario({ id: 1, email: 'usuario01@email.com' });
+    }
+  };
+
+  const handleTrocarUsuario = (e) => {
+    const idSelecionado = parseInt(e.target.value, 10);
+    const u = usuarios.find(item => item.id === idSelecionado);
+    if (u) setUsuario(u);
+  };
+
   const handleCriarAtividade = async (e) => {
     e.preventDefault();
 
-    // Validação de segurança no Frontend
+    if (!usuario) {
+      alert('Faça login para registrar uma atividade.');
+      return;
+    }
+
     const distNum = parseInt(distancia, 10);
     const durNum = parseInt(duracao, 10);
     const calNum = parseInt(calorias, 10);
@@ -57,7 +99,7 @@ function App() {
         distancia_m: distNum,
         duracao_min: durNum,
         calorias: calNum,
-        usuarioId: usuario ? usuario.id : 1
+        usuarioId: usuario.id
       });
 
       setTipo('');
@@ -73,9 +115,10 @@ function App() {
   };
 
   const handleCurtir = async (id) => {
+    if (!usuario) return alert('Faça login para curtir.');
     try {
       await axios.post(`${API_URL}/atividades/${id}/curtir`, {
-        usuarioId: usuario ? usuario.id : 1
+        usuarioId: usuario.id
       });
       carregarAtividades();
     } catch (err) {
@@ -95,10 +138,11 @@ function App() {
 
   const handleEnviarComentario = async (e) => {
     e.preventDefault();
+    if (!usuario) return alert('Faça login para comentar.');
     try {
       await axios.post(`${API_URL}/atividades/${atividadeComentarios.id}/comentarios`, {
         texto: novoComentario,
-        usuarioId: usuario ? usuario.id : 1
+        usuarioId: usuario.id
       });
       setNovoComentario('');
       abrirComentarios(atividadeComentarios);
@@ -108,6 +152,8 @@ function App() {
     }
   };
 
+  // Cálculos dinâmicos do perfil
+  const totalCalorias = atividades.reduce((acc, curr) => acc + Number(curr.calorias || 0), 0);
   const indiceUltimo = paginaAtual * ITENS_POR_PAGINA;
   const atividadesPaginadas = atividades.slice(indiceUltimo - ITENS_POR_PAGINA, indiceUltimo);
   const totalPaginas = Math.ceil(atividades.length / ITENS_POR_PAGINA);
@@ -118,15 +164,17 @@ function App() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">👤</div>
-          <h2 className="sidebar-title">{usuario ? usuario.email.split('@')[0] : 'usuario01'}</h2>
+          <h2 className="sidebar-title">
+            {usuario ? usuario.email.split('@')[0] : 'Visitante'}
+          </h2>
         </div>
         <div className="sidebar-stats">
           <div>
-            <span className="stat-value">{atividades.length}</span>
+            <span className="stat-value">{usuario ? atividades.length : 0}</span>
             <span className="stat-label">Qtd. Atividades</span>
           </div>
           <div>
-            <span className="stat-value">50</span>
+            <span className="stat-value">{usuario ? totalCalorias : 0}</span>
             <span className="stat-label">Qtd. Calorias</span>
           </div>
         </div>
@@ -141,8 +189,17 @@ function App() {
 
       {/* Main Content */}
       <main className="main-content">
-        <header className="content-header">
-          <button className="btn btn-dark" onClick={() => setUsuario(usuario ? null : { id: 1, email: 'usuario01@email.com' })}>
+        <header className="content-header" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {/* Seletor para trocar de usuário para testes */}
+          {usuario && usuarios.length > 0 && (
+            <select className="input" style={{ width: 'auto', margin: 0 }} value={usuario.id} onChange={handleTrocarUsuario}>
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id}>{u.email}</option>
+              ))}
+            </select>
+          )}
+
+          <button className="btn btn-dark" onClick={handleToggleLogin}>
             {usuario ? 'Logout' : 'Login'}
           </button>
         </header>
@@ -225,50 +282,58 @@ function App() {
         <section className="feed-section">
           <h2 className="feed-title">Suas Atividades</h2>
           <div className="atividades-feed">
-            {atividadesPaginadas.map((item) => (
-              <div key={item.id} className="atividade-card">
-                <div className="card-left">
-                  <div className="avatar-placeholder">👤</div>
-                  <span className="user-name">{item.Usuario ? item.Usuario.email.split('@')[0] : 'usuario01'}</span>
-                </div>
-                
-                <div className="card-center">
-                  <span className="atividade-tipo">{item.tipo}</span>
-                  <div className="atividade-meta-data">
-                    <span>{item.distancia_m} m</span>
-                    <span className="meta-label">Distância</span>
+            {!usuario ? (
+              <p style={{ textAlign: 'center', padding: '20px' }}>Faça login para visualizar e interagir com as atividades.</p>
+            ) : atividadesPaginadas.length === 0 ? (
+              <p style={{ textAlign: 'center', padding: '20px' }}>Nenhuma atividade registrada.</p>
+            ) : (
+              atividadesPaginadas.map((item) => (
+                <div key={item.id} className="atividade-card">
+                  <div className="card-left">
+                    <div className="avatar-placeholder">👤</div>
+                    <span className="user-name">
+                      {item.Usuario ? item.Usuario.email.split('@')[0] : usuario.email.split('@')[0]}
+                    </span>
                   </div>
-                  <div className="atividade-meta-data">
-                    <span>{item.duracao_min} min</span>
-                    <span className="meta-label">Duração</span>
+                  
+                  <div className="card-center">
+                    <span className="atividade-tipo">{item.tipo}</span>
+                    <div className="atividade-meta-data">
+                      <span>{item.distancia_m} m</span>
+                      <span className="meta-label">Distância</span>
+                    </div>
+                    <div className="atividade-meta-data">
+                      <span>{item.duracao_min} min</span>
+                      <span className="meta-label">Duração</span>
+                    </div>
+                    <div className="atividade-meta-data">
+                      <span>{item.calorias || 0}</span>
+                      <span className="meta-label">Calorias</span>
+                    </div>
                   </div>
-                  <div className="atividade-meta-data">
-                    <span>{item.calorias || 350}</span>
-                    <span className="meta-label">Calorias</span>
-                  </div>
-                </div>
 
-                <div className="card-right">
-                  <span className="atividade-data">18/08/2026</span>
-                  <div className="card-actions">
-                    <span 
-                      onClick={() => handleCurtir(item.id)}
-                      style={{ 
-                        cursor: 'pointer', 
-                        color: item.curtidoPeloUsuario ? '#ff0000' : '#333333',
-                        fontWeight: 'bold',
-                        fontSize: '1.2rem'
-                      }}
-                    >
-                      {item.curtidoPeloUsuario ? '❤️' : '♡'} {item.curtidas_count}
-                    </span>
-                    <span onClick={() => abrirComentarios(item)} style={{ cursor: 'pointer', fontSize: '1.2rem' }}>
-                      💬 {item.comentarios_count}
-                    </span>
+                  <div className="card-right">
+                    <span className="atividade-data">18/08/2026</span>
+                    <div className="card-actions">
+                      <span 
+                        onClick={() => handleCurtir(item.id)}
+                        style={{ 
+                          cursor: 'pointer', 
+                          color: item.curtidoPeloUsuario ? '#ff0000' : '#333333',
+                          fontWeight: 'bold',
+                          fontSize: '1.2rem'
+                        }}
+                      >
+                        {item.curtidoPeloUsuario ? '❤️' : '♡'} {item.curtidas_count || 0}
+                      </span>
+                      <span onClick={() => abrirComentarios(item)} style={{ cursor: 'pointer', fontSize: '1.2rem' }}>
+                        💬 {item.comentarios_count || 0}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </section>
 
