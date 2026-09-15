@@ -60,11 +60,10 @@ function App() {
       } else if (res.data && res.data.id) {
         setUsuario(res.data);
       } else {
-        // Se a API responder sem objeto completo, define ID padrão do usuário 1
         setUsuario({ id: 1, email: loginEmail, nome_usuario: loginEmail });
       }
     } catch (err) {
-      // Fallback: se o backend não tiver a rota /login ou rejeitar, permite entrar como ID 1 para testes
+      // Fallback para permitir entrada com ID 1 caso a API não tenha rota /login ativa
       setUsuario({ id: 1, email: loginEmail || 'usuario1@saep.com', nome_usuario: loginEmail || 'usuario1' });
     }
   };
@@ -79,11 +78,13 @@ function App() {
   const handleCriarAtividade = async (e) => {
     e.preventDefault();
     
-    // Garante um ID válido de usuário (padrão 1 caso o estado esteja nulo)
-    const userId = usuario && usuario.id ? parseInt(usuario.id, 10) : 1;
+    // Converte todos os números explicitamente
     const distNum = parseInt(distancia, 10);
     const durNum = parseInt(duracao, 10);
     const calNum = parseInt(calorias, 10);
+
+    // Garante ID de usuário válido (padrão 1 caso nulo)
+    const userId = usuario && usuario.id ? parseInt(usuario.id, 10) : 1;
 
     if (!tipo) {
       alert('Selecione o tipo da atividade.');
@@ -95,17 +96,18 @@ function App() {
       return;
     }
 
-    // Payload compatível com todas as variações do Sequelize no Backend
+    // Payload completo com todas as variações de chave primária/estrangeira do Sequelize
     const payload = {
-      tipo: tipo,
-      distancia_m: distNum,
+      tipo: tipo,                              // Ex: "Corrida"
+      tipo_atividade: tipo,
       distancia: distNum,
-      duracao_min: durNum,
+      distancia_m: distNum,
       duracao: durNum,
+      duracao_min: durNum,
       calorias: calNum,
       caloria: calNum,
-      usuarioId: userId,
       usuario_id: userId,
+      usuarioId: userId,
       UsuarioId: userId
     };
 
@@ -120,7 +122,13 @@ function App() {
 
       await carregarAtividades();
     } catch (err) {
-      console.error('Erro detalhado:', err.response ? err.response.data : err);
+      console.log('--- ERRO DETALHADO DO SERVIDOR ---');
+      if (err.response) {
+        console.log('Status:', err.response.status);
+        console.log('Dados do erro:', err.response.data);
+      } else {
+        console.log(err);
+      }
       alert('Erro ao criar atividade no servidor. Verifique o console.');
     }
   };
@@ -165,7 +173,7 @@ function App() {
     }
   };
 
-  // Cálculos do perfil
+  // Cálculos de soma e paginação
   const totalCalorias = atividades.reduce((acc, curr) => acc + Number(curr.calorias || curr.caloria || 0), 0);
   const indiceUltimo = paginaAtual * ITENS_POR_PAGINA;
   const atividadesPaginadas = atividades.slice(indiceUltimo - ITENS_POR_PAGINA, indiceUltimo);
@@ -272,7 +280,7 @@ function App() {
           <button className="filter-item">Trilha</button>
         </div>
 
-        {/* Botão de Form de Atividade */}
+        {/* Botão para Exibir/Ocultar Formulário */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
           <button className="btn btn-dark" onClick={() => setMostrarFormulario(!mostrarFormulario)}>
             {mostrarFormulario ? 'Cancelar' : '+ Criar Atividade'}
@@ -410,7 +418,7 @@ function App() {
         )}
       </main>
 
-      {/* Modal Comentários */}
+      {/* Modal de Comentários */}
       {atividadeComentarios && (
         <div className="modal-overlay">
           <div className="modal" style={{ width: '400px' }}>
