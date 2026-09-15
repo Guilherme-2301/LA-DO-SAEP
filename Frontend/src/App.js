@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
 
-// URL base dinâmica: usa a variável da Vercel ou o Render direto
-const API_URL = process.env.REACT_APP_API_URL || 'https://saep-backend.onrender.com';
+// URL direta do seu Backend implantado no Render
+const API_URL = 'https://saep-backend.onrender.com';
 
 function App() {
   const [atividades, setAtividades] = useState([]);
