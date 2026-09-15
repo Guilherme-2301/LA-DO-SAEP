@@ -68,29 +68,35 @@ Comentario.belongsTo(Usuario, { foreignKey: 'usuario_id' });
 async function inicializar() {
   try {
     await sequelize.authenticate();
-    await sequelize.sync({ force: true });
+    
+    // Altere force: true para false (ou apenas sync()) para não apagar o banco toda vez
+    await sequelize.sync();
 
-    await Usuario.bulkCreate([
-      { id: 1, nome: 'saepsaude', email: 'saepsaude@email.com', nome_usuario: 'saepsaude', imagem: 'saepsaude.png', senha: '123', createdAt: '2024-08-14 18:56:33.531 +00:00', updatedAt: '2024-08-14 18:56:33.531 +00:00' },
-      { id: 2, nome: 'usuario1', email: 'usuario1@email.com', nome_usuario: 'usuario01', imagem: 'usuario01.jpg', senha: '123', createdAt: '2024-08-14 18:58:07.862 +00:00', updatedAt: '2024-08-14 18:58:07.862 +00:00' },
-      { id: 3, nome: 'usuario2', email: 'usuario2@email.com', nome_usuario: 'usuario02', imagem: 'usuario02.jpg', senha: '123', createdAt: '2024-08-14 18:58:21.651 +00:00', updatedAt: '2024-08-14 18:58:21.651 +00:00' },
-      { id: 4, nome: 'usuario3', email: 'usuario3@email.com', nome_usuario: 'usuario03', imagem: 'usuario03.jpg', senha: '123', createdAt: '2024-08-14 18:58:35.090 +00:00', updatedAt: '2024-08-14 18:58:35.090 +00:00' }
-    ]);
+    // Povoa o banco apenas se a tabela de usuários estiver vazia
+    const totalUsuarios = await Usuario.count();
+    if (totalUsuarios === 0) {
+      await Usuario.bulkCreate([
+        { id: 1, nome: 'saepsaude', email: 'saepsaude@email.com', nome_usuario: 'saepsaude', imagem: 'saepsaude.png', senha: '123' },
+        { id: 2, nome: 'usuario1', email: 'usuario1@email.com', nome_usuario: 'usuario01', imagem: 'usuario01.jpg', senha: '123' },
+        { id: 3, nome: 'usuario2', email: 'usuario2@email.com', nome_usuario: 'usuario02', imagem: 'usuario02.jpg', senha: '123' },
+        { id: 4, nome: 'usuario3', email: 'usuario3@email.com', nome_usuario: 'usuario03', imagem: 'usuario03.jpg', senha: '123' }
+      ]);
 
-    await Atividade.bulkCreate([
-      { id: 3, tipo_atividade: 'caminhada', distancia_percorrida: 5000, duracao_atividade: 70, quantidade_calorias: 340, usuario_id: 1, createdAt: '2024-08-14 19:15:11.453 +00:00', updatedAt: '2024-08-14 19:15:11.453 +00:00' },
-      { id: 4, tipo_atividade: 'caminhada', distancia_percorrida: 4000, duracao_atividade: 40, quantidade_calorias: 140, usuario_id: 2, createdAt: '2024-08-14 19:15:54.438 +00:00', updatedAt: '2024-08-14 19:15:54.438 +00:00' },
-      { id: 5, tipo_atividade: 'caminhada', distancia_percorrida: 3000, duracao_atividade: 30, quantidade_calorias: 140, usuario_id: 3, createdAt: '2024-08-14 19:16:09.149 +00:00', updatedAt: '2024-08-14 19:16:09.149 +00:00' },
-      { id: 6, tipo_atividade: 'caminhada', distancia_percorrida: 3500, duracao_atividade: 35, quantidade_calorias: 180, usuario_id: 4, createdAt: '2024-08-14 19:16:24.636 +00:00', updatedAt: '2024-08-14 19:16:24.636 +00:00' },
-      { id: 7, tipo_atividade: 'corrida', distancia_percorrida: 6500, duracao_atividade: 40, quantidade_calorias: 280, usuario_id: 1, createdAt: '2024-08-14 19:17:30.973 +00:00', updatedAt: '2024-08-14 19:17:30.973 +00:00' },
-      { id: 8, tipo_atividade: 'corrida', distancia_percorrida: 5500, duracao_atividade: 50, quantidade_calorias: 220, usuario_id: 2, createdAt: '2024-08-14 19:17:47.106 +00:00', updatedAt: '2024-08-14 19:17:47.106 +00:00' },
-      { id: 9, tipo_atividade: 'corrida', distancia_percorrida: 10000, duracao_atividade: 24, quantidade_calorias: 420, usuario_id: 3, createdAt: '2024-08-14 19:18:18.334 +00:00', updatedAt: '2024-08-14 19:18:18.334 +00:00' },
-      { id: 10, tipo_atividade: 'corrida', distancia_percorrida: 5000, duracao_atividade: 23, quantidade_calorias: 320, usuario_id: 4, createdAt: '2024-08-14 19:18:41.149 +00:00', updatedAt: '2024-08-14 19:18:41.149 +00:00' },
-      { id: 11, tipo_atividade: 'trilha', distancia_percorrida: 2000, duracao_atividade: 40, quantidade_calorias: 420, usuario_id: 1, createdAt: '2024-08-14 19:20:24.202 +00:00', updatedAt: '2024-08-14 19:20:24.202 +00:00' },
-      { id: 12, tipo_atividade: 'trilha', distancia_percorrida: 3000, duracao_atividade: 45, quantidade_calorias: 470, usuario_id: 2, createdAt: '2024-08-14 19:20:43.688 +00:00', updatedAt: '2024-08-14 19:20:43.688 +00:00' },
-      { id: 13, tipo_atividade: 'trilha', distancia_percorrida: 3500, duracao_atividade: 45, quantidade_calorias: 420, usuario_id: 3, createdAt: '2024-08-14 19:26:04.128 +00:00', updatedAt: '2024-08-14 19:26:04.128 +00:00' },
-      { id: 14, tipo_atividade: 'trilha', distancia_percorrida: 5000, duracao_atividade: 70, quantidade_calorias: 570, usuario_id: 4, createdAt: '2024-08-14 19:26:23.865 +00:00', updatedAt: '2024-08-14 19:26:23.865 +00:00' }
-    ]);
+      await Atividade.bulkCreate([
+        { id: 3, tipo_atividade: 'caminhada', distancia_percorrida: 5000, duracao_atividade: 70, quantidade_calorias: 340, usuario_id: 1 },
+        { id: 4, tipo_atividade: 'caminhada', distancia_percorrida: 4000, duracao_atividade: 40, quantidade_calorias: 140, usuario_id: 2 },
+        { id: 5, tipo_atividade: 'caminhada', distancia_percorrida: 3000, duracao_atividade: 30, quantidade_calorias: 140, usuario_id: 3 },
+        { id: 6, tipo_atividade: 'caminhada', distancia_percorrida: 3500, duracao_atividade: 35, quantidade_calorias: 180, usuario_id: 4 },
+        { id: 7, tipo_atividade: 'corrida', distancia_percorrida: 6500, duracao_atividade: 40, quantidade_calorias: 280, usuario_id: 1 },
+        { id: 8, tipo_atividade: 'corrida', distancia_percorrida: 5500, duracao_atividade: 50, quantidade_calorias: 220, usuario_id: 2 },
+        { id: 9, tipo_atividade: 'corrida', distancia_percorrida: 10000, duracao_atividade: 24, quantidade_calorias: 420, usuario_id: 3 },
+        { id: 10, tipo_atividade: 'corrida', distancia_percorrida: 5000, duracao_atividade: 23, quantidade_calorias: 320, usuario_id: 4 },
+        { id: 11, tipo_atividade: 'trilha', distancia_percorrida: 2000, duracao_atividade: 40, quantidade_calorias: 420, usuario_id: 1 },
+        { id: 12, tipo_atividade: 'trilha', distancia_percorrida: 3000, duracao_atividade: 45, quantidade_calorias: 470, usuario_id: 2 },
+        { id: 13, tipo_atividade: 'trilha', distancia_percorrida: 3500, duracao_atividade: 45, quantidade_calorias: 420, usuario_id: 3 },
+        { id: 14, tipo_atividade: 'trilha', distancia_percorrida: 5000, duracao_atividade: 70, quantidade_calorias: 570, usuario_id: 4 }
+      ]);
+    }
 
     console.log('✅ BANCO INICIALIZADO COM SUCESSO');
   } catch (err) {
@@ -99,6 +105,11 @@ async function inicializar() {
 }
 
 inicializar();
+
+// 4.1 Rota Raiz (Evita a mensagem "Não foi possível obter /")
+app.get('/', (req, res) => {
+  res.send('🚀 Backend do SAEP Saúde está rodando com sucesso!');
+});
 
 // 5. Rotas de Autenticação
 app.post('/login', async (req, res) => {
