@@ -6,16 +6,20 @@ const API_URL = 'https://saep-backend.onrender.com';
 
 function App() {
   const [atividades, setAtividades] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [usuario, setUsuario] = useState(null); // Inicia sem usuário logado
-  const [paginaAtual, setPaginaAtual] = useState(1);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [usuario, setUsuario] = useState(null); // Guarda o usuário logado
 
-  // Estados do Formulário de Atividade
+  // Estados da Tela de Login
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginSenha, setLoginSenha] = useState('');
+  const [erroLogin, setErroLogin] = useState('');
+
+  // Estados do Formulário de Criar Atividade
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [tipo, setTipo] = useState('');
   const [distancia, setDistancia] = useState('');
   const [duracao, setDuracao] = useState('');
   const [calorias, setCalorias] = useState('');
+  const [paginaAtual, setPaginaAtual] = useState(1);
 
   // Modal Comentários
   const [atividadeComentarios, setAtividadeComentarios] = useState(null);
@@ -24,31 +28,11 @@ function App() {
 
   const ITENS_POR_PAGINA = 2;
 
-  // Carrega lista de usuários e atividades ao iniciar
   useEffect(() => {
-    carregarUsuarios();
-  }, []);
-
-  useEffect(() => {
-    carregarAtividades();
-  }, [usuario]);
-
-  const carregarUsuarios = async () => {
-    try {
-      const res = await axios.get(`${API_URL}/usuarios`);
-      setUsuarios(res.data);
-      // Se houver usuários e nenhum estiver selecionado, seleciona o primeiro por padrão
-      if (res.data.length > 0 && !usuario) {
-        setUsuario(res.data[0]);
-      }
-    } catch (err) {
-      console.error('Erro ao carregar usuários:', err);
-      // Fallback de segurança caso a rota de usuários falhe
-      if (!usuario) {
-        setUsuario({ id: 1, email: 'usuario01@email.com' });
-      }
+    if (usuario) {
+      carregarAtividades();
     }
-  };
+  }, [usuario]);
 
   const carregarAtividades = async () => {
     try {
@@ -60,36 +44,59 @@ function App() {
     }
   };
 
-  const handleToggleLogin = () => {
-    if (usuario) {
-      setUsuario(null); // Logout
-    } else if (usuarios.length > 0) {
-      setUsuario(usuarios[0]); // Login como primeiro usuário
-    } else {
-      setUsuario({ id: 1, email: 'usuario01@email.com' });
+  // Autenticação de Login
+  const handleFazerLogin = async (e) => {
+    e.preventDefault();
+    setErroLogin('');
+
+    try {
+      // Tenta autenticar na rota de login do backend
+      const res = await axios.post(`${API_URL}/login`, {
+        email: loginEmail,
+        senha: loginSenha
+      });
+
+      if (res.data && res.data.usuario) {
+        setUsuario(res.data.usuario);
+      } else {
+        setUsuario(res.data);
+      }
+    } catch (err) {
+      // Fallback: se a rota /login não existir no backend, valida o usuário manualmente
+      try {
+        const resUsuarios = await axios.get(`${API_URL}/usuarios`);
+        const usuarioEncontrado = resUsuarios.data.find(
+          u => (u.email === loginEmail || u.nome_usuario === loginEmail) && u.senha === loginSenha
+        );
+
+        if (usuarioEncontrado) {
+          setUsuario(usuarioEncontrado);
+        } else {
+          setErroLogin('Usuário/E-mail ou senha inválidos.');
+        }
+      } catch (error) {
+        setErroLogin('Falha ao conectar com o servidor para autenticação.');
+      }
     }
   };
 
-  const handleTrocarUsuario = (e) => {
-    const idSelecionado = parseInt(e.target.value, 10);
-    const u = usuarios.find(item => item.id === idSelecionado);
-    if (u) setUsuario(u);
+  const handleLogout = () => {
+    setUsuario(null);
+    setLoginEmail('');
+    setLoginSenha('');
+    setAtividades([]);
   };
 
   const handleCriarAtividade = async (e) => {
     e.preventDefault();
-
-    if (!usuario) {
-      alert('Faça login para registrar uma atividade.');
-      return;
-    }
+    if (!usuario) return;
 
     const distNum = parseInt(distancia, 10);
     const durNum = parseInt(duracao, 10);
     const calNum = parseInt(calorias, 10);
 
     if (isNaN(distNum) || isNaN(durNum) || isNaN(calNum)) {
-      alert('Por favor, preencha distância, duração e calorias usando APENAS NÚMEROS.');
+      alert('Preencha distância, duração e calorias usando APENAS NÚMEROS.');
       return;
     }
 
@@ -115,7 +122,7 @@ function App() {
   };
 
   const handleCurtir = async (id) => {
-    if (!usuario) return alert('Faça login para curtir.');
+    if (!usuario) return;
     try {
       await axios.post(`${API_URL}/atividades/${id}/curtir`, {
         usuarioId: usuario.id
@@ -138,7 +145,7 @@ function App() {
 
   const handleEnviarComentario = async (e) => {
     e.preventDefault();
-    if (!usuario) return alert('Faça login para comentar.');
+    if (!usuario) return;
     try {
       await axios.post(`${API_URL}/atividades/${atividadeComentarios.id}/comentarios`, {
         texto: novoComentario,
@@ -152,12 +159,69 @@ function App() {
     }
   };
 
-  // Cálculos dinâmicos do perfil
+  // Cálculos do perfil
   const totalCalorias = atividades.reduce((acc, curr) => acc + Number(curr.calorias || 0), 0);
   const indiceUltimo = paginaAtual * ITENS_POR_PAGINA;
   const atividadesPaginadas = atividades.slice(indiceUltimo - ITENS_POR_PAGINA, indiceUltimo);
   const totalPaginas = Math.ceil(atividades.length / ITENS_POR_PAGINA);
 
+  // --- TELA DE LOGIN (Exibida se nenhum usuário estiver logado) ---
+  if (!usuario) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        backgroundColor: '#f4f4f9'
+      }}>
+        <div style={{
+          backgroundColor: '#ffffff',
+          padding: '40px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+          width: '100%',
+          maxWidth: '380px'
+        }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '20px', color: '#333' }}>SAEP Saúde</h2>
+          <form onSubmit={handleFazerLogin}>
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>E-mail / Usuário</label>
+              <input
+                type="text"
+                className="input"
+                placeholder="Digite seu usuário ou e-mail"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Senha</label>
+              <input
+                type="password"
+                className="input"
+                placeholder="Digite sua senha"
+                value={loginSenha}
+                onChange={e => setLoginSenha(e.target.value)}
+                required
+              />
+            </div>
+            {erroLogin && (
+              <p style={{ color: 'red', fontSize: '0.85rem', marginBottom: '15px', textAlign: 'center' }}>
+                {erroLogin}
+              </p>
+            )}
+            <button className="btn btn-dark" type="submit" style={{ width: '100%' }}>
+              Entrar
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // --- TELA PRINCIPAL (Painel / Dashboard) ---
   return (
     <div className="layout-saep">
       {/* Sidebar */}
@@ -165,16 +229,16 @@ function App() {
         <div className="sidebar-header">
           <div className="sidebar-logo">👤</div>
           <h2 className="sidebar-title">
-            {usuario ? usuario.email.split('@')[0] : 'Visitante'}
+            {usuario.nome_usuario || usuario.email.split('@')[0]}
           </h2>
         </div>
         <div className="sidebar-stats">
           <div>
-            <span className="stat-value">{usuario ? atividades.length : 0}</span>
+            <span className="stat-value">{atividades.length}</span>
             <span className="stat-label">Qtd. Atividades</span>
           </div>
           <div>
-            <span className="stat-value">{usuario ? totalCalorias : 0}</span>
+            <span className="stat-value">{totalCalorias}</span>
             <span className="stat-label">Qtd. Calorias</span>
           </div>
         </div>
@@ -189,18 +253,9 @@ function App() {
 
       {/* Main Content */}
       <main className="main-content">
-        <header className="content-header" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', alignItems: 'center' }}>
-          {/* Seletor para trocar de usuário para testes */}
-          {usuario && usuarios.length > 0 && (
-            <select className="input" style={{ width: 'auto', margin: 0 }} value={usuario.id} onChange={handleTrocarUsuario}>
-              {usuarios.map(u => (
-                <option key={u.id} value={u.id}>{u.email}</option>
-              ))}
-            </select>
-          )}
-
-          <button className="btn btn-dark" onClick={handleToggleLogin}>
-            {usuario ? 'Logout' : 'Login'}
+        <header className="content-header" style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="btn btn-dark" onClick={handleLogout}>
+            Logout
           </button>
         </header>
 
@@ -211,7 +266,7 @@ function App() {
           <button className="filter-item">Trilha</button>
         </div>
 
-        {/* Botão para exibir o Formulário */}
+        {/* Botão de Form de Atividade */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
           <button className="btn btn-dark" onClick={() => setMostrarFormulario(!mostrarFormulario)}>
             {mostrarFormulario ? 'Cancelar' : '+ Criar Atividade'}
@@ -226,48 +281,48 @@ function App() {
               <div className="form-grid">
                 <div>
                   <label>Tipo da atividade</label>
-                  <input 
-                    className="input" 
-                    placeholder="Ex: Caminhada" 
-                    value={tipo} 
-                    onChange={e => setTipo(e.target.value)} 
-                    required 
+                  <input
+                    className="input"
+                    placeholder="Ex: Caminhada"
+                    value={tipo}
+                    onChange={e => setTipo(e.target.value)}
+                    required
                   />
                 </div>
                 <div>
                   <label>Distância percorrida (metros)</label>
-                  <input 
-                    className="input" 
-                    type="number" 
-                    min="1" 
-                    placeholder="Ex: 1000" 
-                    value={distancia} 
-                    onChange={e => setDistancia(e.target.value)} 
-                    required 
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 1000"
+                    value={distancia}
+                    onChange={e => setDistancia(e.target.value)}
+                    required
                   />
                 </div>
                 <div>
                   <label>Duração da atividade (minutos)</label>
-                  <input 
-                    className="input" 
-                    type="number" 
-                    min="1" 
-                    placeholder="Ex: 120" 
-                    value={duracao} 
-                    onChange={e => setDuracao(e.target.value)} 
-                    required 
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 120"
+                    value={duracao}
+                    onChange={e => setDuracao(e.target.value)}
+                    required
                   />
                 </div>
                 <div>
                   <label>Quantidade de Calorias</label>
-                  <input 
-                    className="input" 
-                    type="number" 
-                    min="1" 
-                    placeholder="Ex: 300" 
-                    value={calorias} 
-                    onChange={e => setCalorias(e.target.value)} 
-                    required 
+                  <input
+                    className="input"
+                    type="number"
+                    min="1"
+                    placeholder="Ex: 300"
+                    value={calorias}
+                    onChange={e => setCalorias(e.target.value)}
+                    required
                   />
                 </div>
               </div>
@@ -282,9 +337,7 @@ function App() {
         <section className="feed-section">
           <h2 className="feed-title">Suas Atividades</h2>
           <div className="atividades-feed">
-            {!usuario ? (
-              <p style={{ textAlign: 'center', padding: '20px' }}>Faça login para visualizar e interagir com as atividades.</p>
-            ) : atividadesPaginadas.length === 0 ? (
+            {atividadesPaginadas.length === 0 ? (
               <p style={{ textAlign: 'center', padding: '20px' }}>Nenhuma atividade registrada.</p>
             ) : (
               atividadesPaginadas.map((item) => (
@@ -292,10 +345,10 @@ function App() {
                   <div className="card-left">
                     <div className="avatar-placeholder">👤</div>
                     <span className="user-name">
-                      {item.Usuario ? item.Usuario.email.split('@')[0] : usuario.email.split('@')[0]}
+                      {item.Usuario ? (item.Usuario.nome_usuario || item.Usuario.email.split('@')[0]) : usuario.email.split('@')[0]}
                     </span>
                   </div>
-                  
+
                   <div className="card-center">
                     <span className="atividade-tipo">{item.tipo}</span>
                     <div className="atividade-meta-data">
@@ -315,10 +368,10 @@ function App() {
                   <div className="card-right">
                     <span className="atividade-data">18/08/2026</span>
                     <div className="card-actions">
-                      <span 
+                      <span
                         onClick={() => handleCurtir(item.id)}
-                        style={{ 
-                          cursor: 'pointer', 
+                        style={{
+                          cursor: 'pointer',
                           color: item.curtidoPeloUsuario ? '#ff0000' : '#333333',
                           fontWeight: 'bold',
                           fontSize: '1.2rem'
@@ -359,18 +412,18 @@ function App() {
               ) : (
                 listaComentarios.map(c => (
                   <div key={c.id} className="comentario-item">
-                    <strong>{c.Usuario ? c.Usuario.email.split('@')[0] : 'Anônimo'}:</strong> {c.texto}
+                    <strong>{c.Usuario ? (c.Usuario.nome_usuario || c.Usuario.email.split('@')[0]) : 'Anônimo'}:</strong> {c.texto}
                   </div>
                 ))
               )}
             </div>
             <form onSubmit={handleEnviarComentario}>
-              <input 
-                className="input" 
-                placeholder="Escreva um comentário..." 
-                value={novoComentario} 
-                onChange={e => setNovoComentario(e.target.value)} 
-                required 
+              <input
+                className="input"
+                placeholder="Escreva um comentário..."
+                value={novoComentario}
+                onChange={e => setNovoComentario(e.target.value)}
+                required
               />
               <button className="btn btn-dark" type="submit" style={{ width: '100%', margin: '8px 0' }}>Enviar Comentário</button>
             </form>
