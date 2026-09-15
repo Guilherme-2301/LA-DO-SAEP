@@ -6,7 +6,7 @@ const API_URL = 'https://saep-backend.onrender.com';
 
 function App() {
   const [atividades, setAtividades] = useState([]);
-  const [usuario, setUsuario] = useState(null); // Guarda o usuário logado
+  const [usuario, setUsuario] = useState(null);
 
   // Estados da Tela de Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -50,7 +50,6 @@ function App() {
     setErroLogin('');
 
     try {
-      // Tenta autenticar na rota de login do backend
       const res = await axios.post(`${API_URL}/login`, {
         email: loginEmail,
         senha: loginSenha
@@ -62,7 +61,6 @@ function App() {
         setUsuario(res.data);
       }
     } catch (err) {
-      // Fallback: se a rota /login não existir no backend, valida o usuário manualmente
       try {
         const resUsuarios = await axios.get(`${API_URL}/usuarios`);
         const usuarioEncontrado = resUsuarios.data.find(
@@ -101,12 +99,15 @@ function App() {
     }
 
     try {
+      // Envia chaves em camelCase e snake_case para compatibilidade com a tabela no Render
       await axios.post(`${API_URL}/atividades`, {
         tipo: tipo.trim(),
         distancia_m: distNum,
         duracao_min: durNum,
         calorias: calNum,
-        usuarioId: usuario.id
+        caloria: calNum,
+        usuarioId: usuario.id,
+        usuario_id: usuario.id
       });
 
       setTipo('');
@@ -117,6 +118,7 @@ function App() {
 
       await carregarAtividades();
     } catch (err) {
+      console.error('Erro detalhado:', err.response ? err.response.data : err);
       alert('Erro ao criar atividade no servidor.');
     }
   };
@@ -125,7 +127,8 @@ function App() {
     if (!usuario) return;
     try {
       await axios.post(`${API_URL}/atividades/${id}/curtir`, {
-        usuarioId: usuario.id
+        usuarioId: usuario.id,
+        usuario_id: usuario.id
       });
       carregarAtividades();
     } catch (err) {
@@ -149,7 +152,8 @@ function App() {
     try {
       await axios.post(`${API_URL}/atividades/${atividadeComentarios.id}/comentarios`, {
         texto: novoComentario,
-        usuarioId: usuario.id
+        usuarioId: usuario.id,
+        usuario_id: usuario.id
       });
       setNovoComentario('');
       abrirComentarios(atividadeComentarios);
@@ -160,12 +164,12 @@ function App() {
   };
 
   // Cálculos do perfil
-  const totalCalorias = atividades.reduce((acc, curr) => acc + Number(curr.calorias || 0), 0);
+  const totalCalorias = atividades.reduce((acc, curr) => acc + Number(curr.calorias || curr.caloria || 0), 0);
   const indiceUltimo = paginaAtual * ITENS_POR_PAGINA;
   const atividadesPaginadas = atividades.slice(indiceUltimo - ITENS_POR_PAGINA, indiceUltimo);
   const totalPaginas = Math.ceil(atividades.length / ITENS_POR_PAGINA);
 
-  // --- TELA DE LOGIN (Exibida se nenhum usuário estiver logado) ---
+  // --- TELA DE LOGIN ---
   if (!usuario) {
     return (
       <div style={{
@@ -221,7 +225,7 @@ function App() {
     );
   }
 
-  // --- TELA PRINCIPAL (Painel / Dashboard) ---
+  // --- TELA PRINCIPAL (Painel) ---
   return (
     <div className="layout-saep">
       {/* Sidebar */}
@@ -229,7 +233,7 @@ function App() {
         <div className="sidebar-header">
           <div className="sidebar-logo">👤</div>
           <h2 className="sidebar-title">
-            {usuario.nome_usuario || usuario.email.split('@')[0]}
+            {usuario.nome_usuario || (usuario.email ? usuario.email.split('@')[0] : 'usuario')}
           </h2>
         </div>
         <div className="sidebar-stats">
@@ -360,7 +364,7 @@ function App() {
                       <span className="meta-label">Duração</span>
                     </div>
                     <div className="atividade-meta-data">
-                      <span>{item.calorias || 0}</span>
+                      <span>{item.calorias || item.caloria || 0}</span>
                       <span className="meta-label">Calorias</span>
                     </div>
                   </div>
