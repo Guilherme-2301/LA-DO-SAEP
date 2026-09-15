@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './index.css';
 
+// URL base dinâmica: usa a variável da Vercel ou o Render direto
+const API_URL = process.env.REACT_APP_API_URL || 'https://saep-backend.onrender.com';
+
 function App() {
   const [atividades, setAtividades] = useState([]);
   const [paginaAtual, setPaginaAtual] = useState(1);
@@ -28,7 +31,7 @@ function App() {
   const carregarAtividades = async () => {
     try {
       const uid = usuario ? usuario.id : '';
-      const res = await axios.get(`http://localhost:3000/atividades?usuarioId=${uid}`);
+      const res = await axios.get(`${API_URL}/atividades?usuarioId=${uid}`);
       setAtividades(res.data);
     } catch (err) {
       console.error('Erro ao carregar atividades:', err);
@@ -49,7 +52,7 @@ function App() {
     }
 
     try {
-      await axios.post('http://localhost:3000/atividades', {
+      await axios.post(`${API_URL}/atividades`, {
         tipo: tipo.trim(),
         distancia_m: distNum,
         duracao_min: durNum,
@@ -71,7 +74,7 @@ function App() {
 
   const handleCurtir = async (id) => {
     try {
-      await axios.post(`http://localhost:3000/atividades/${id}/curtir`, {
+      await axios.post(`${API_URL}/atividades/${id}/curtir`, {
         usuarioId: usuario ? usuario.id : 1
       });
       carregarAtividades();
@@ -83,7 +86,7 @@ function App() {
   const abrirComentarios = async (atividade) => {
     setAtividadeComentarios(atividade);
     try {
-      const res = await axios.get(`http://localhost:3000/atividades/${atividade.id}/comentarios`);
+      const res = await axios.get(`${API_URL}/atividades/${atividade.id}/comentarios`);
       setListaComentarios(res.data);
     } catch (err) {
       console.error(err);
@@ -93,7 +96,7 @@ function App() {
   const handleEnviarComentario = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:3000/atividades/${atividadeComentarios.id}/comentarios`, {
+      await axios.post(`${API_URL}/atividades/${atividadeComentarios.id}/comentarios`, {
         texto: novoComentario,
         usuarioId: usuario ? usuario.id : 1
       });
